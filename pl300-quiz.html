@@ -1,0 +1,1793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Power BI Quest — PL-300 Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #F2C94C;
+    --gold-dark: #D4A017;
+    --teal: #00B294;
+    --red: #E74856;
+    --green: #10893E;
+    --bg: #0D0A00;
+    --surface: #16110A;
+    --surface2: #1F1800;
+    --border: #3A2E00;
+    --text: #FFF8DC;
+    --muted: #7A6A30;
+    --font-display: 'Orbitron', monospace;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-body: 'IBM Plex Sans', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Animated grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(242,201,76,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(242,201,76,0.04) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .scanline {
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ══ SCREENS ══ */
+  .screen { display: none; min-height: 100vh; position: relative; z-index: 1; }
+  .screen.active { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+  /* ══ TITLE SCREEN ══ */
+  #screen-title { padding: 40px 20px; text-align: center; }
+
+  .title-badge {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 4px;
+    color: var(--gold);
+    text-transform: uppercase;
+    padding: 6px 16px;
+    border: 1px solid var(--gold);
+    border-radius: 2px;
+    margin-bottom: 24px;
+    animation: pulse-border 2s infinite;
+  }
+
+  @keyframes pulse-border {
+    0%, 100% { border-color: var(--gold); box-shadow: 0 0 0 rgba(242,201,76,0); }
+    50% { border-color: #FFD700; box-shadow: 0 0 16px rgba(242,201,76,0.3); }
+  }
+
+  .title-main {
+    font-family: var(--font-display);
+    font-size: clamp(32px, 6vw, 72px);
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #fff 0%, var(--gold) 50%, #F2C94C 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .title-sub {
+    font-family: var(--font-mono);
+    font-size: 14px;
+    color: var(--muted);
+    letter-spacing: 2px;
+    margin-bottom: 40px;
+  }
+
+  .mode-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
+    max-width: 860px;
+    width: 100%;
+    margin-bottom: 32px;
+  }
+
+  .mode-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: left;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--card-accent, var(--gold));
+    transform: scaleX(0);
+    transition: transform 0.3s;
+  }
+
+  .mode-card:hover::before { transform: scaleX(1); }
+  .mode-card:hover {
+    border-color: var(--card-accent, var(--gold));
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  }
+
+  .mode-card .mode-icon { font-size: 32px; margin-bottom: 12px; display: block; }
+  .mode-card .mode-name {
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--card-accent, var(--gold));
+    margin-bottom: 6px;
+    letter-spacing: 1px;
+  }
+  .mode-card .mode-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .mode-card .mode-count { font-family: var(--font-mono); font-size: 11px; color: var(--border); margin-top: 10px; }
+
+  /* ══ TOPIC CHIPS ══ */
+  .topic-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 28px;
+    max-width: 860px;
+  }
+
+  .topic-chip {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 1px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    background: var(--surface);
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .topic-chip:hover { border-color: var(--gold); color: var(--text); }
+  .topic-chip.active { border-color: var(--teal); background: rgba(0,178,148,0.15); color: var(--teal); }
+
+  /* ══ LEADERBOARD PREVIEW ══ */
+  .leaderboard-preview {
+    max-width: 860px;
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+  }
+
+  .leaderboard-preview h3 {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 14px;
+  }
+
+  #top-scores-list { list-style: none; }
+  #top-scores-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  #top-scores-list li:last-child { border-bottom: none; }
+  .rank-badge { font-family: var(--font-display); font-size: 11px; font-weight: 700; width: 24px; text-align: center; color: var(--muted); }
+  .rank-badge.gold { color: var(--gold); }
+  .rank-badge.silver { color: #AAB8C2; }
+  .rank-badge.bronze { color: #C96A2A; }
+
+  #filter-summary {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--teal);
+    margin-bottom: 4px;
+    min-height: 18px;
+    text-align: center;
+  }
+
+  /* ══ NAME INPUT SCREEN ══ */
+  #screen-name { padding: 40px 20px; text-align: center; }
+
+  .name-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 40px;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .name-card h2 {
+    font-family: var(--font-display);
+    font-size: 18px;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+
+  .name-card p { color: var(--muted); font-size: 13px; margin-bottom: 28px; }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 18px;
+    font-family: var(--font-mono);
+    font-size: 16px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  input[type="text"]:focus { border-color: var(--gold); }
+
+  /* ══ BUTTONS ══ */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 28px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-display);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+  }
+
+  .btn-primary { background: var(--gold); color: #1B1500; }
+  .btn-primary:hover { background: var(--gold-dark); transform: translateY(-1px); }
+
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--muted); color: var(--text); }
+
+  .btn-large { padding: 16px 40px; font-size: 15px; }
+
+  /* ══ GAME SCREEN ══ */
+  #screen-game {
+    padding: 20px;
+    align-items: stretch;
+    justify-content: flex-start;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .game-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 0;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .game-meta { display: flex; align-items: center; gap: 20px; }
+  .player-name { font-family: var(--font-mono); font-size: 13px; color: var(--gold); }
+  .score-display { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--gold); }
+  .score-display span { font-size: 11px; color: var(--muted); display: block; font-family: var(--font-mono); }
+
+  .timer-wrap { position: relative; width: 60px; height: 60px; }
+  .timer-svg { transform: rotate(-90deg); }
+  .timer-track { fill: none; stroke: var(--border); stroke-width: 4; }
+  .timer-fill {
+    fill: none;
+    stroke: var(--gold);
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-dasharray: 163;
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+  .timer-text {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  }
+
+  .progress-bar-wrap { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 24px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), var(--teal)); border-radius: 2px; transition: width 0.4s; }
+
+  .q-category {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 4px 12px;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: inline-block;
+    margin-bottom: 16px;
+  }
+
+  .q-number { font-family: var(--font-mono); font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+  .q-text { font-size: clamp(16px, 2.5vw, 22px); font-weight: 600; line-height: 1.5; margin-bottom: 28px; color: var(--text); }
+
+  .q-text code, .code-block {
+    display: block;
+    background: #080600;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: 4px;
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: #FFE082;
+    margin: 12px 0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  @media (max-width: 600px) { .answers-grid { grid-template-columns: 1fr; } }
+
+  .answer-btn {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: 14px;
+    line-height: 1.4;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .answer-btn:hover:not(:disabled) {
+    border-color: var(--gold);
+    background: var(--surface2);
+    transform: translateX(3px);
+  }
+
+  .answer-key { font-family: var(--font-mono); font-size: 12px; font-weight: 600; color: var(--muted); flex-shrink: 0; width: 20px; margin-top: 1px; }
+
+  .answer-btn.correct { border-color: var(--green); background: rgba(16,137,62,0.15); animation: correct-flash 0.4s ease; }
+  .answer-btn.wrong { border-color: var(--red); background: rgba(231,72,86,0.15); animation: wrong-shake 0.4s ease; }
+  .answer-btn.reveal-correct { border-color: var(--green); background: rgba(16,137,62,0.08); }
+
+  @keyframes correct-flash { 0%{transform:scale(1)} 50%{transform:scale(1.02)} 100%{transform:scale(1)} }
+  @keyframes wrong-shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+
+  .answer-btn:disabled { cursor: default; opacity: 0.7; }
+  .answer-btn.correct .answer-key, .answer-btn.reveal-correct .answer-key { color: var(--green); }
+  .answer-btn.wrong .answer-key { color: var(--red); }
+
+  .explanation-panel {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--teal);
+    border-radius: 4px;
+    padding: 14px 18px;
+    font-size: 13px;
+    color: #A8D8EA;
+    line-height: 1.6;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .explanation-panel.visible { display: block; animation: slide-in 0.3s ease; }
+  @keyframes slide-in { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  .explanation-panel strong { color: var(--teal); }
+
+  .streak-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; font-family: var(--font-mono); font-size: 12px; color: var(--muted); }
+  .streak-flames { display: flex; gap: 3px; }
+  .flame { font-size: 16px; opacity: 0.2; transition: opacity 0.3s, transform 0.3s; }
+  .flame.lit { opacity: 1; transform: scale(1.2); }
+
+  .combo-display { font-family: var(--font-display); font-size: 13px; color: var(--muted); transition: all 0.3s; }
+  .combo-display.active { color: var(--gold); text-shadow: 0 0 12px rgba(242,201,76,0.5); }
+
+  .lightning-banner {
+    background: linear-gradient(135deg, #3D2A00, #6B4A00);
+    border: 1px solid var(--gold);
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--gold);
+    letter-spacing: 2px;
+    text-align: center;
+    margin-bottom: 12px;
+    display: none;
+  }
+  .lightning-banner.visible { display: block; animation: pulse-gold 1s infinite; }
+  @keyframes pulse-gold { 0%,100%{box-shadow:0 0 0 rgba(242,201,76,0)} 50%{box-shadow:0 0 20px rgba(242,201,76,0.3)} }
+
+  /* ══ RESULTS SCREEN ══ */
+  #screen-results { padding: 40px 20px; text-align: center; }
+
+  .results-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 48px 40px;
+    max-width: 640px;
+    width: 100%;
+  }
+
+  .results-score-big { font-family: var(--font-display); font-size: 72px; font-weight: 900; color: var(--gold); line-height: 1; margin-bottom: 4px; }
+  .results-label { font-family: var(--font-mono); font-size: 12px; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 28px; }
+
+  .results-stats { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; margin-bottom: 28px; }
+  .stat-box { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 16px; }
+  .stat-box .stat-val { font-family: var(--font-display); font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .stat-box .stat-lbl { font-family: var(--font-mono); font-size: 10px; color: var(--muted); letter-spacing: 1px; }
+
+  .grade-banner { padding: 14px 20px; border-radius: 6px; margin-bottom: 24px; font-weight: 600; font-size: 15px; }
+  .grade-A { background: rgba(16,137,62,0.2); border: 1px solid var(--green); color: #4EC96A; }
+  .grade-B { background: rgba(0,178,148,0.15); border: 1px solid var(--teal); color: var(--teal); }
+  .grade-C { background: rgba(242,201,76,0.15); border: 1px solid var(--gold); color: var(--gold); }
+  .grade-D { background: rgba(231,72,86,0.15); border: 1px solid var(--red); color: #FF8A8A; }
+
+  .missed-section { text-align: left; margin-bottom: 24px; }
+  .missed-section h3 { font-family: var(--font-mono); font-size: 11px; letter-spacing: 3px; color: var(--red); text-transform: uppercase; margin-bottom: 12px; }
+  .missed-item { background: var(--surface2); border: 1px solid var(--border); border-left: 2px solid var(--red); border-radius: 4px; padding: 10px 14px; margin-bottom: 8px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+  .missed-item strong { color: var(--text); display: block; margin-bottom: 4px; }
+
+  .results-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+  /* ══ FLOATING POINTS ══ */
+  .floating-pts {
+    position: fixed;
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 700;
+    pointer-events: none;
+    z-index: 100;
+    animation: float-up 1.2s ease-out forwards;
+  }
+  @keyframes float-up { 0%{opacity:1;transform:translateY(0) scale(1)} 100%{opacity:0;transform:translateY(-80px) scale(1.3)} }
+
+  /* ══ TOAST ══ */
+  .toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 12px 24px;
+    font-family: var(--font-mono); font-size: 13px; z-index: 200;
+    animation: toast-in 0.3s ease; white-space: nowrap;
+  }
+  @keyframes toast-in { from{opacity:0;top:0} to{opacity:1;top:20px} }
+
+  #particles { position: fixed; inset: 0; pointer-events: none; z-index: 0; }
+</style>
+</head>
+<body>
+<canvas id="particles"></canvas>
+<div class="scanline"></div>
+
+<!-- ══ TITLE SCREEN ══ -->
+<div id="screen-title" class="screen active">
+  <div class="title-badge">PL-300 · Power BI Data Analyst</div>
+  <h1 class="title-main">POWER BI<br>QUEST</h1>
+  <p class="title-sub">// TEST YOUR KNOWLEDGE · EARN POINTS · BEAT THE CLOCK</p>
+
+  <div style="font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:2px;margin-bottom:10px;text-align:center;">
+    FILTER BY TOPIC <span style="color:var(--border)">(optional — leave blank for all)</span>
+  </div>
+  <div class="topic-chips" id="topic-chips"></div>
+  <div id="filter-summary" style="font-family:var(--font-mono);font-size:11px;color:var(--teal);margin-bottom:4px;min-height:18px;text-align:center;"></div>
+
+  <div class="mode-grid">
+    <div class="mode-card" style="--card-accent:#F2C94C" onclick="selectMode('quick')">
+      <span class="mode-icon">⚡</span>
+      <div class="mode-name">Quick Fire</div>
+      <div class="mode-desc">10 questions, 15 seconds each. Fast-paced warm-up before the exam.</div>
+      <div class="mode-count">10 questions · 15s each · 100pts base</div>
+    </div>
+    <div class="mode-card" style="--card-accent:#00B294" onclick="selectMode('classic')">
+      <span class="mode-icon">🧠</span>
+      <div class="mode-name">Classic Challenge</div>
+      <div class="mode-desc">25 questions covering all topics. Includes hints and explanations.</div>
+      <div class="mode-count">25 questions · 30s each · 200pts base</div>
+    </div>
+    <div class="mode-card" style="--card-accent:#F2C94C" onclick="selectMode('lightning')">
+      <span class="mode-icon">🌩️</span>
+      <div class="mode-name">Lightning Round</div>
+      <div class="mode-desc">Survive as long as you can. Timer gets shorter each question. One wrong = game over.</div>
+      <div class="mode-count">Endless · 20s → 8s · Survival mode</div>
+    </div>
+    <div class="mode-card" style="--card-accent:#E74856" onclick="selectMode('exam')">
+      <span class="mode-icon">🎯</span>
+      <div class="mode-name">Exam Blitz</div>
+      <div class="mode-desc">Simulate the real exam. 50 questions, strict exam conditions — full review at end.</div>
+      <div class="mode-count">50 questions · 45s each · No hints</div>
+    </div>
+  </div>
+
+  <div class="leaderboard-preview">
+    <h3>🏆 &nbsp;High Scores</h3>
+    <ul id="top-scores-list">
+      <li><span class="rank-badge gold">1</span> <span id="hs-1-name">---</span> <span style="margin-left:auto;font-family:var(--font-mono);color:var(--gold)" id="hs-1-score">-</span></li>
+      <li><span class="rank-badge silver">2</span> <span id="hs-2-name">---</span> <span style="margin-left:auto;font-family:var(--font-mono);color:#AAB8C2" id="hs-2-score">-</span></li>
+      <li><span class="rank-badge bronze">3</span> <span id="hs-3-name">---</span> <span style="margin-left:auto;font-family:var(--font-mono);color:#C96A2A" id="hs-3-score">-</span></li>
+    </ul>
+  </div>
+</div>
+
+<!-- ══ NAME SCREEN ══ -->
+<div id="screen-name" class="screen">
+  <div class="name-card">
+    <h2>ENTER YOUR NAME</h2>
+    <p>Your name will appear on the leaderboard.</p>
+    <input type="text" id="player-name-input" placeholder="e.g. Power BI Pro" maxlength="20">
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="btn btn-ghost" onclick="showScreen('title')">← Back</button>
+      <button class="btn btn-primary btn-large" onclick="startGame()">LAUNCH QUEST →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ GAME SCREEN ══ -->
+<div id="screen-game" class="screen">
+  <div class="game-header">
+    <div class="game-meta">
+      <div class="player-name" id="player-display">Player</div>
+      <div class="combo-display" id="combo-display">×1</div>
+    </div>
+    <div class="timer-wrap">
+      <svg class="timer-svg" width="60" height="60" viewBox="0 0 60 60">
+        <circle class="timer-track" cx="30" cy="30" r="26"/>
+        <circle class="timer-fill" id="timer-circle" cx="30" cy="30" r="26"/>
+      </svg>
+      <div class="timer-text" id="timer-text">30</div>
+    </div>
+    <div class="score-display">
+      <span>SCORE</span>
+      <span id="score-val">0</span>
+    </div>
+  </div>
+
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progress-bar" style="width:0%"></div>
+  </div>
+
+  <div class="lightning-banner" id="lightning-banner">⚡ LIGHTNING ROUND — ONE WRONG ANSWER ENDS IT ALL ⚡</div>
+
+  <div class="streak-bar">
+    <span>Streak:</span>
+    <div class="streak-flames">
+      <span class="flame" id="flame-1">🔥</span>
+      <span class="flame" id="flame-2">🔥</span>
+      <span class="flame" id="flame-3">🔥</span>
+      <span class="flame" id="flame-4">🔥</span>
+      <span class="flame" id="flame-5">🔥</span>
+    </div>
+    <span id="streak-text" style="font-size:11px;color:var(--muted)"></span>
+  </div>
+
+  <div class="q-category" id="q-category">Domain</div>
+  <div class="q-number" id="q-number">Question 1 of 10</div>
+  <div class="q-text" id="q-text"></div>
+
+  <div class="answers-grid" id="answers-grid"></div>
+
+  <div class="explanation-panel" id="explanation-panel"></div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--border)">
+    <button class="btn btn-ghost" onclick="quitGame()">✕ Quit</button>
+    <button class="btn btn-primary" id="next-btn" onclick="nextQuestion()" style="display:none">NEXT →</button>
+  </div>
+</div>
+
+<!-- ══ RESULTS SCREEN ══ -->
+<div id="screen-results" class="screen">
+  <div class="results-card">
+    <div id="results-emoji" style="font-size:48px;margin-bottom:16px">🎯</div>
+    <div class="results-score-big" id="final-score">0</div>
+    <div class="results-label">POINTS EARNED</div>
+
+    <div class="results-stats">
+      <div class="stat-box">
+        <div class="stat-val" id="stat-correct" style="color:var(--green)">0</div>
+        <div class="stat-lbl">Correct</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-wrong" style="color:var(--red)">0</div>
+        <div class="stat-lbl">Wrong</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-val" id="stat-streak" style="color:var(--gold)">0</div>
+        <div class="stat-lbl">Best Streak</div>
+      </div>
+    </div>
+
+    <div id="grade-banner" class="grade-banner"></div>
+
+    <div class="missed-section" id="missed-section" style="display:none">
+      <h3>📚 Review These Topics</h3>
+      <div id="missed-list"></div>
+    </div>
+
+    <div class="results-actions">
+      <button class="btn btn-ghost" onclick="showScreen('title')">🏠 Home</button>
+      <button class="btn btn-primary" onclick="playAgain()">🔄 Play Again</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// QUESTION BANK — 100 Questions, sourced from Microsoft Learn
+// Domains: Prepare (27) | Model (27) | Visualize (27) | Manage (19)
+// ═══════════════════════════════════════════════════════
+const ALL_QUESTIONS = [
+
+// ── DOMAIN 1: PREPARE THE DATA (27 questions) ──────────────────
+
+// Get or connect to data
+{ id:1, domain:"Prepare · Get & Connect", 
+  q:"You have a large dataset in Azure SQL Database that is updated every 5 minutes. Reports must always show the latest data. Which connectivity mode should you choose?",
+  opts:["DirectQuery", "Live Connection", "Composite", "Import"],
+  ans:0,
+  expl:"DirectQuery does not import data — it queries the underlying source with every user interaction, ensuring reports show current data. Import mode copies data at refresh time, so it cannot provide near real-time data beyond the scheduled refresh limit." },
+
+{ id:2, domain:"Prepare · Get & Connect",
+  q:"Which of the following is a limitation of DirectQuery mode in Power BI Desktop?",
+  opts:["The 1 GB semantic model size limit applies", "Calculated tables are not supported", "Scheduled refresh cannot be configured", "All DAX functions are available"],
+  ans:1,
+  expl:"In DirectQuery mode, calculated tables are not supported because there is no local data store to persist them. The 1 GB limit does NOT apply to DirectQuery — that is one of its benefits. The 1 million intermediate row result limit does apply." },
+
+{ id:3, domain:"Prepare · Get & Connect",
+  q:"A colleague published a shared semantic model to the Power BI service. You want to build a new report on top of it without importing a separate copy of the data. What should you do?",
+  opts:["Create a composite model combining both sources", "Use DirectQuery to the original source", "Connect to the shared semantic model using Live Connection", "Import the data using Power Query"],
+  ans:2,
+  expl:"Connecting to a shared semantic model in the Power BI service creates a live connection (thin report) — you build your report on the remote model without duplicating data. This supports self-service analytics while maintaining a single source of truth." },
+
+{ id:4, domain:"Prepare · Get & Connect",
+  q:"You need to connect to an on-premises SQL Server database from the Power BI service for scheduled refresh. What is required?",
+  opts:["A Power BI Embedded license", "A DirectQuery connection only", "A service principal in Azure AD", "An on-premises data gateway"],
+  ans:3,
+  expl:"Cloud data sources that Power BI can reach over a direct network connection do not need a gateway. However, on-premises data sources require an on-premises data gateway to bridge the connection between the Power BI cloud service and the local network." },
+
+{ id:5, domain:"Prepare · Get & Connect",
+  q:"A Power BI parameter is currently set to 'Production'. You need to allow report users to switch between 'Production' and 'Staging' data sources without republishing. What should you configure?",
+  opts:["Use parameters with a list of allowed values and bind them to the data source connection", "Use RLS to filter by environment", "Apply conditional formatting to the connection string", "Create a separate .pbix for each environment"],
+  ans:0,
+  expl:"Parameters in Power Query can be used to parameterise data source connection settings. When a parameter is exposed, users (or admins via the service) can change the value without modifying the report file. A list of allowed values restricts inputs to valid options." },
+
+{ id:6, domain:"Prepare · Get & Connect",
+  q:"You change the privacy level of a data source from 'Organizational' to 'Public'. What is the primary implication?",
+  opts:["Scheduled refresh frequency increases", "The data can now be combined with any other data source, including private ones", "Query folding is disabled", "DirectQuery mode is disabled"],
+  ans:1,
+  expl:"Privacy levels control how Power BI handles data combination. A Public source is considered safe to share with any other source. Changing to Public means the data may be sent to external sources during query evaluation (mashup engine), which has security implications." },
+
+// Profile and clean
+{ id:7, domain:"Prepare · Profile & Clean",
+  q:"In Power Query Editor, you want to understand the distribution of values in the 'Region' column. Which view shows the count and percentage of each distinct value?",
+  opts:["Data Preview", "Column Quality", "Column Distribution", "Column Profile"],
+  ans:2,
+  expl:"Column Distribution shows a visual histogram and the count of distinct and unique values in a column. Column Quality shows percentages of valid, error, and empty values. Column Profile provides detailed statistics for a selected column including value distribution." },
+
+{ id:8, domain:"Prepare · Profile & Clean",
+  q:"Column Quality in Power Query shows 15% errors in the 'OrderDate' column. What is the most appropriate first step?",
+  opts:["Convert the column to Text type", "Delete all error rows", "Replace errors with the current date", "Click 'Keep Errors' to isolate and inspect them before deciding on a resolution strategy"],
+  ans:3,
+  expl:"Before fixing errors you should understand their root cause. Using 'Keep Errors' filters the table to only error rows so you can inspect them. Only then can you determine the correct resolution — whether that is removing rows, replacing values, or fixing the source." },
+
+{ id:9, domain:"Prepare · Profile & Clean",
+  q:"You have a 'Sales Amount' column containing some null values. Business rules say nulls represent zero sales. What is the correct Power Query step?",
+  opts:["Replace null values with 0", "Change the column data type to Whole Number", "Use ISNULL() in DAX to handle it", "Remove rows with null values"],
+  ans:0,
+  expl:"Power Query's 'Replace Values' (or 'Fill' feature) can replace nulls with a specified value. Since the business rule defines nulls as zero, replacing null with 0 is the correct data-preparation step before loading." },
+
+{ id:10, domain:"Prepare · Profile & Clean",
+  q:"You receive a CSV file where the 'CustomerID' column contains leading zeros (e.g., '00123') but Power BI automatically converts it to the number 123. What should you do?",
+  opts:["Create a calculated column in the model", "Set the column data type to Text in Power Query", "Enable 'Detect Data Type' for that column", "Use FORMAT() in DAX to add leading zeros"],
+  ans:1,
+  expl:"Setting the data type to Text in Power Query preserves leading zeros. If you let Power BI auto-detect the type as Whole Number, the leading zeros are lost. Data type assignment should be done in Power Query before loading to avoid data quality issues." },
+
+// Transform and load
+{ id:11, domain:"Prepare · Transform & Load",
+  q:"Your source table has sales data in columns Jan, Feb, Mar … Dec (one column per month). You need to convert this to a two-column structure: 'Month' and 'Sales'. Which Power Query operation achieves this?",
+  opts:["Group By", "Pivot", "Unpivot", "Transpose"],
+  ans:2,
+  expl:"Unpivot converts column headers into row values. Selecting the month columns and choosing 'Unpivot Columns' produces an Attribute column (month name) and a Value column (sales amount), which you can then rename. Pivot does the reverse — turning row values into columns." },
+
+{ id:12, domain:"Prepare · Transform & Load",
+  q:"You have two queries: 'Sales' and 'SalesCopy'. 'SalesCopy' was created by duplicating 'Sales'. You add a step to filter rows in 'SalesCopy'. What happens to 'Sales'?",
+  opts:["Sales is refreshed but the filter is ignored", "Power BI raises a circular dependency error", "Both queries are affected because they share the same data", "Only 'SalesCopy' is affected — duplicate queries are independent"],
+  ans:3,
+  expl:"A Duplicate query creates an independent copy of the query — changes to one do not affect the other. A Reference query (by contrast) creates a dependency, so changes to the base query propagate. Use Duplicate when you need a fully independent branch." },
+
+{ id:13, domain:"Prepare · Transform & Load",
+  q:"You have an Excel file with a nested JSON column containing customer address details. Which Power Query feature converts this JSON into separate columns?",
+  opts:["Expand Column", "Unpivot", "Convert to Table", "Split Column"],
+  ans:0,
+  expl:"When a column contains a Record or JSON object, Power Query displays an 'Expand' icon. Clicking it allows you to expand the nested fields into separate columns. This is used to handle semi-structured data like JSON or XML embedded in table columns." },
+
+{ id:14, domain:"Prepare · Transform & Load",
+  q:"You are combining data from two queries. Query A has Customer details and Query B has Order details. You want all customers, including those with no orders. Which type of merge should you use?",
+  opts:["Inner Join", "Left Outer Join", "Right Outer Join", "Full Outer Join"],
+  ans:1,
+  expl:"A Left Outer Join keeps all rows from the left table (Customer, Query A) and matches rows from the right table (Orders, Query B). Customers with no orders appear with null values in the Order columns. Inner Join would exclude customers with no orders." },
+
+{ id:15, domain:"Prepare · Transform & Load",
+  q:"You want to create a fact table from your transactional data and a separate date dimension. Which Power Query operation helps you build the date dimension from a date range?",
+  opts:["Pivot on the date column", "Add a Conditional Column based on date ranges", "List.Dates() used with Table.FromList()", "Group By with Date aggregation"],
+  ans:2,
+  expl:"In Power Query, List.Dates(startDate, count, duration) generates a list of dates, which can then be converted to a table with Table.FromList(). This is a standard approach for creating a custom date dimension table in Power Query." },
+
+{ id:16, domain:"Prepare · Transform & Load",
+  q:"You have a query 'RawSales' that loads a large table from SQL Server. You create a Reference query 'CleanSales' that filters and transforms RawSales. If you disable loading for 'RawSales', what happens?",
+  opts:["Both queries fail", "CleanSales inherits all steps from RawSales automatically", "CleanSales also stops loading", "RawSales data is removed from the model but CleanSales still works correctly"],
+  ans:3,
+  expl:"Setting a query to 'Disable Load' (Enable Load = off) means the query is not loaded into the data model but is still evaluated as a dependency. 'CleanSales', which references it, continues to work correctly and its results are still loaded into the model." },
+
+{ id:17, domain:"Prepare · Transform & Load",
+  q:"Query folding occurs when Power Query translates transformation steps into native source queries. Which action BREAKS query folding?",
+  opts:["Adding an index column", "Grouping and aggregating rows", "Filtering rows by column value", "Merging two queries from the same SQL source"],
+  ans:0,
+  expl:"Adding an Index Column is an operation that cannot be translated into a SQL query — it requires Power BI to load data locally first. This breaks query folding for all subsequent steps. Operations like filtering, merging same-source tables, and grouping can often be folded." },
+
+{ id:18, domain:"Prepare · Transform & Load",
+  q:"You need to append three regional sales files (North, South, East) into a single query. Which Power Query operation should you use?",
+  opts:["Merge Queries", "Append Queries", "Group By", "Combine Files"],
+  ans:1,
+  expl:"Append Queries stacks rows from multiple tables/queries vertically into a single result set — equivalent to a SQL UNION ALL. Merge Queries joins tables horizontally based on matching columns (like a SQL JOIN). Append is used when the tables have the same schema." },
+
+// ── DOMAIN 2: MODEL THE DATA (27 questions) ──────────────────
+
+// Design and implement data model
+{ id:19, domain:"Model · Semantic Model Design",
+  q:"You have a Sales fact table with an 'OrderDate' column and a 'ShipDate' column, both needing a relationship to the same Date dimension table. How should you model this?",
+  opts:["Create two separate date dimension tables, one for each date", "Create one date dimension with two active relationships to Sales", "Create one date dimension with one active and one inactive relationship — use USERELATIONSHIP() in DAX for the inactive one", "Use a composite model to separate the two date contexts"],
+  ans:2,
+  expl:"Power BI only allows one active relationship between two tables. You create one active relationship (e.g., OrderDate → Date[Date]) and one inactive relationship (ShipDate → Date[Date]). In DAX measures that need the ship date context, you use USERELATIONSHIP() to activate the inactive relationship." },
+
+{ id:20, domain:"Model · Semantic Model Design",
+  q:"In a star schema, a 'Product' dimension table is used in two separate fact tables: 'Sales' and 'Returns'. What is the recommended relationship configuration?",
+  opts:["Use many-to-many relationships between Product and both fact tables", "Create a bridge table to connect both fact tables", "Create separate copies of the Product dimension for each fact table", "Use a single Product dimension with one-to-many relationships to both fact tables"],
+  ans:3,
+  expl:"In a star schema, dimension tables (like Product) should connect to multiple fact tables via one-to-many relationships (Product[ProductKey] → fact table). This is the standard star schema pattern and avoids data duplication. Separate copies create maintenance overhead." },
+
+{ id:21, domain:"Model · Semantic Model Design",
+  q:"You configure a relationship with cross-filter direction set to 'Both'. What is the primary risk of this setting?",
+  opts:["It can produce ambiguous results and unexpected filter propagation in complex models", "It prevents the relationship from being used in DAX", "It forces all measures to use CALCULATE", "It disables time intelligence calculations"],
+  ans:0,
+  expl:"Bi-directional cross-filtering (Both) allows filters to flow in both directions between tables. While sometimes necessary (e.g., many-to-many via bridge tables), it can cause ambiguity when multiple paths exist, leading to unexpected results. Microsoft recommends using it only when specifically required." },
+
+{ id:22, domain:"Model · Semantic Model Design",
+  q:"What is the purpose of a role-playing dimension?",
+  opts:["A dimension that participates in row-level security roles", "A dimension table that is referenced multiple times from the same fact table for different date contexts", "A dimension that can change its values based on the user's role", "A calculated table created from DAX functions"],
+  ans:1,
+  expl:"A role-playing dimension is a single dimension table (typically Date) that serves multiple purposes in the same fact table — for example, Order Date, Ship Date, and Due Date all referencing the same Date table. Implemented via multiple relationships (one active, others inactive) with USERELATIONSHIP() in DAX." },
+
+{ id:23, domain:"Model · Semantic Model Design",
+  q:"You need a date table in your model. Which of the following is a requirement for Power BI time intelligence functions to work correctly with it?",
+  opts:["The date column must include a time component", "The table must be named 'Date' or 'Calendar'", "The date column must be marked as a Date Table, with no missing dates in the range", "The table must be imported from SQL Server"],
+  ans:2,
+  expl:"For DAX time intelligence functions to work correctly, the date column must be contiguous (no missing dates) and the table should be marked as a Date Table (using the 'Mark as Date Table' option). The table name does not need to be 'Date' — any name works as long as the table is marked correctly." },
+
+{ id:24, domain:"Model · Semantic Model Design",
+  q:"When should you use a calculated column instead of a measure in Power BI?",
+  opts:["When performance is a concern and you want to reduce memory usage", "When the calculation references values from another table not in a relationship", "When you need to aggregate values dynamically based on filter context", "When you need a value that is computed at row level and stored in the model, such as a concatenated name or category label"],
+  ans:3,
+  expl:"Calculated columns are evaluated row by row at data refresh time and stored in the model — they are appropriate for row-level values like concatenations, classifications, or lookups. Measures are evaluated dynamically at query time in filter context and are more efficient for aggregations." },
+
+// DAX
+{ id:25, domain:"Model · DAX",
+  q:"What does the CALCULATE function do when a filter argument conflicts with an existing filter context?",
+  opts:["The existing filter is overwritten by the new filter argument (unless KEEPFILTERS is used)", "Both filters are applied using an AND condition automatically", "It raises an error", "The new filter is ignored"],
+  ans:0,
+  expl:"By default, CALCULATE overwrites existing filters on the same column(s) with the new filter argument. To preserve existing filters and AND them with new ones, use KEEPFILTERS() as a modifier. This is a fundamental distinction in understanding DAX filter context manipulation." },
+
+{ id:26, domain:"Model · DAX",
+  q:"You want a measure that calculates Year-to-Date sales. Which DAX function is most appropriate?",
+  opts:["SAMEPERIODLASTYEAR()", "DATESYTD()", "PREVIOUSYEAR()", "DATEADD()"],
+  ans:1,
+  expl:"TOTALYTD() or CALCULATE([Sales], DATESYTD('Date'[Date])) calculates the year-to-date total. DATESYTD() returns a table of dates from the start of the year to the current date in context. SAMEPERIODLASTYEAR() shifts the period back one year. PREVIOUSYEAR() returns the entire previous year." },
+
+{ id:27, domain:"Model · DAX",
+  q:"A measure 'Total Sales' = SUM(Sales[Amount]). You want a measure showing the % of total sales for each product, regardless of any product filter. Which DAX pattern is correct?",
+  opts:["[Total Sales] / SUMX(Sales, Sales[Amount])", "[Total Sales] / SUM(Sales[Amount])", "DIVIDE([Total Sales], CALCULATE([Total Sales], ALL(Product)))", "DIVIDE([Total Sales], CALCULATE([Total Sales], ALLEXCEPT(Sales, Sales[Amount])))"],
+  ans:2,
+  expl:"ALL(Product) removes all filters from the Product table, so CALCULATE([Total Sales], ALL(Product)) returns the grand total regardless of which product is selected. DIVIDE() handles division by zero gracefully. This is the standard pattern for calculating % of total." },
+
+{ id:28, domain:"Model · DAX",
+  q:"What is context transition in DAX?",
+  opts:["When a measure changes context from one table to another via a relationship", "When DAX switches from Import to DirectQuery evaluation", "When filter context changes due to a slicer selection", "When a row context is automatically converted to an equivalent filter context by CALCULATE"],
+  ans:3,
+  expl:"Context transition occurs when CALCULATE (or a measure referenced in row context) converts the current row context into an equivalent filter context. This is fundamental to how calculated columns that reference measures work — each row's values become filters." },
+
+{ id:29, domain:"Model · DAX",
+  q:"Which DAX function would you use to calculate sales for the same period in the previous year?",
+  opts:["SAMEPERIODLASTYEAR()", "PARALLELPERIOD([Date], -1, YEAR)", "PREVIOUSYEAR()", "DATEADD([Date], -1, YEAR)"],
+  ans:0,
+  expl:"SAMEPERIODLASTYEAR('Date'[Date]) returns a table of dates shifted back exactly one year for the dates in the current context. It is specifically designed for year-over-year comparisons. DATEADD is more general. PARALLELPERIOD shifts by complete periods (e.g., whole month or year)." },
+
+{ id:30, domain:"Model · DAX",
+  q:"You have a measure: Sales MTD = CALCULATE([Total Sales], DATESMTD('Date'[Date])). A user selects March 15, 2024 in a date slicer. What does this measure return?",
+  opts:["Sales for March 15 only", "Cumulative sales from March 1 to March 15", "Cumulative sales from January 1 to March 15", "Sales for all of March"],
+  ans:1,
+  expl:"DATESMTD() returns a table of dates from the first day of the month up to the last date in the current filter context. With March 15 selected, it returns March 1–15, so the measure sums sales for that month-to-date period." },
+
+{ id:31, domain:"Model · DAX",
+  q:"What is the difference between ALL() and REMOVEFILTERS() in DAX?",
+  opts:["REMOVEFILTERS() works only in DirectQuery mode", "ALL() can only remove filters from one column; REMOVEFILTERS() can handle multiple columns", "They are functionally identical as filter modifiers, but REMOVEFILTERS() is the recommended function when the intent is to remove filters", "ALL() always returns a table; REMOVEFILTERS() always returns a scalar"],
+  ans:2,
+  expl:"As filter modifiers inside CALCULATE, ALL() and REMOVEFILTERS() behave identically — both remove filters. However, Microsoft recommends REMOVEFILTERS() when the intent is filter removal, because ALL() has a dual role: it can also be used as a table function that returns all rows. Using REMOVEFILTERS() makes intent clearer." },
+
+{ id:32, domain:"Model · DAX",
+  q:"You want to calculate a running total of sales over time. Which DAX pattern is correct?",
+  opts:["CUMULATIVE([Sales], 'Date'[Date])", "RUNNINGTOTAL([Sales])", "TOTALYTD([Sales], 'Date'[Date])", "CALCULATE([Sales], DATESBETWEEN('Date'[Date], BLANK(), MAX('Date'[Date])))"],
+  ans:3,
+  expl:"A life-to-date or running total uses DATESBETWEEN with a BLANK() start date (which defaults to the earliest date in the Date table) and MAX('Date'[Date]) as the end date. TOTALYTD resets at the start of each year. There is no built-in CUMULATIVE or RUNNINGTOTAL function in DAX." },
+
+{ id:33, domain:"Model · DAX",
+  q:"A quick measure in Power BI is best described as:",
+  opts:["A DAX measure automatically generated by Power BI based on a selected calculation template", "A measure that is calculated at import time and stored in the model", "A measure shared across multiple reports via a shared semantic model", "A measure that executes faster than regular measures due to optimization"],
+  ans:0,
+  expl:"Quick Measures allow users to select a calculation pattern from a template (e.g., Year-over-year change, Rolling average, Filtered value) and Power BI automatically generates the underlying DAX code. It lowers the barrier to entry for DAX and can be used as a learning tool." },
+
+{ id:34, domain:"Model · DAX",
+  q:"Which statement about calculated tables in Power BI is correct?",
+  opts:["Calculated tables are supported in both Import and DirectQuery modes", "Calculated tables are evaluated using DAX at refresh time and stored in the model like imported tables", "Calculated tables cannot have relationships with other tables", "Calculated tables consume no additional memory because they reference existing data"],
+  ans:1,
+  expl:"Calculated tables are defined using DAX expressions and evaluated at data refresh time. Their results are stored in the in-memory model just like imported tables. They are NOT supported in DirectQuery mode (where no local data store exists), and they do participate in relationships like any other table." },
+
+// Optimize model
+{ id:35, domain:"Model · Optimize Performance",
+  q:"You use Performance Analyzer in Power BI Desktop and notice a visual takes 8 seconds to load with most time spent on 'Direct query'. What is the best approach to improve performance?",
+  opts:["Add more filters to the visual", "Increase the number of columns in the visual", "Create aggregation tables to cache pre-summarised data that DirectQuery can use", "Switch the entire model to Import mode immediately"],
+  ans:2,
+  expl:"Aggregation tables (automatic or manual) store pre-summarised data in Import mode alongside a DirectQuery fact table. Power BI routes queries to the aggregation when possible, dramatically reducing source queries. This is a key performance pattern for large DirectQuery models." },
+
+{ id:36, domain:"Model · Optimize Performance",
+  q:"Which of the following actions reduces model memory size in an Import model?",
+  opts:["Increasing the number of relationships", "Setting all tables to Dual storage mode", "Adding more calculated columns for common transformations", "Removing unnecessary columns and rows before loading in Power Query"],
+  ans:3,
+  expl:"The most effective way to reduce an Import model's memory footprint is to remove columns and rows that are not needed for analysis — ideally in Power Query before loading, leveraging query folding to filter at source. Each additional column adds to the VertiPaq in-memory storage." },
+
+{ id:37, domain:"Model · Optimize Performance",
+  q:"DAX Studio shows that a measure is using FILTER(ALL(Table), ...) instead of a Boolean expression in CALCULATE. What is the recommended optimisation?",
+  opts:["Replace the table expression with a direct Boolean expression filter in CALCULATE where possible", "Add more columns to the FILTER function", "Use CALCULATETABLE instead of CALCULATE", "Switch to DirectQuery mode"],
+  ans:0,
+  expl:"Microsoft recommends using Boolean expression filters in CALCULATE rather than FILTER(Table, ...) where possible, because Import model tables are in-memory column stores optimized for Boolean evaluation. The FILTER function iterates each row, which is slower. Use FILTER only when a Boolean expression cannot express the required logic." },
+
+// ── DOMAIN 3: VISUALIZE AND ANALYZE THE DATA (27 questions) ──────
+
+// Create reports
+{ id:38, domain:"Visualize · Create Reports",
+  q:"A report needs to show actual sales vs. budget. Sales are always positive; budget variances can be positive or negative. Which visual is best suited?",
+  opts:["Clustered bar chart", "Waterfall chart", "Treemap", "Pie chart"],
+  ans:1,
+  expl:"A Waterfall chart is designed to show a running total as values increase or decrease, making it ideal for variance analysis (actual vs. budget, starting balance to ending balance). It clearly shows which categories contribute positively or negatively." },
+
+{ id:39, domain:"Visualize · Create Reports",
+  q:"When should you use a paginated report instead of a Power BI report?",
+  opts:["When you need AI visuals like decomposition trees", "When you need interactive slicers and drill-through", "When you need pixel-perfect formatted output optimized for printing, such as invoices or regulatory statements", "When the data source is a real-time stream"],
+  ans:2,
+  expl:"Paginated reports (built with Power BI Report Builder, .rdl format) are designed for pixel-perfect printing and PDF export — scenarios like invoices, financial statements, or regulatory reports that must fit exactly on a printed page with precise formatting. Power BI reports are optimised for interactive exploration." },
+
+{ id:40, domain:"Visualize · Create Reports",
+  q:"You want to apply consistent visual styling across all reports in a workspace. What is the recommended approach?",
+  opts:["Use a corporate template .pbix file and copy visuals", "Set defaults in the tenant admin portal", "Manually format each visual in every report", "Apply a custom theme JSON file to each report"],
+  ans:3,
+  expl:"Power BI themes (applied as JSON files) define default colors, fonts, and visual formatting for an entire report. Applying the same theme JSON across reports ensures visual consistency. Themes can be customised and shared, making them the standard approach for corporate branding." },
+
+{ id:41, domain:"Visualize · Create Reports",
+  q:"You want specific cells in a table visual to change background color based on their value (red for negative, green for positive). What feature achieves this?",
+  opts:["Conditional formatting", "Custom tooltips", "KPI visual", "Data bars"],
+  ans:0,
+  expl:"Conditional formatting in Power BI allows you to dynamically set background color, font color, icons, and data bars for table and matrix cells based on rules, field values, or DAX measures. It is the correct tool for value-based color coding." },
+
+{ id:42, domain:"Visualize · Create Reports",
+  q:"What does the 'Create a narrative visual with Copilot' feature do?",
+  opts:["Generates a new report page automatically based on your data", "Produces an AI-written summary of key insights from the data in the report as a text visual", "Creates calculated measures using natural language", "Translates report labels into multiple languages"],
+  ans:1,
+  expl:"The Copilot narrative visual (also called 'Smart Narrative') generates an automatically updated text summary that describes the key findings and trends visible in the report. The text updates dynamically as users interact with slicers and filters." },
+
+{ id:43, domain:"Visualize · Create Reports",
+  q:"Which visual calculation syntax in DAX is specifically introduced for visual-level calculations in Power BI Desktop (not model-level measures)?",
+  opts:["ROWS()", "VISUALTOTALS()", "RUNNINGSUM()", "COLLAPSE()"],
+  ans:2,
+  expl:"Visual calculations (a Power BI feature for defining DAX calculations directly on visuals rather than in the model) introduce new functions like RUNNINGSUM(), MOVINGAVERAGE(), FIRST(), LAST(), PREVIOUS(), NEXT(). These are only available as visual calculations and are not model-level DAX." },
+
+{ id:44, domain:"Visualize · Create Reports",
+  q:"You want your Power BI report to automatically update the data every 30 minutes without users refreshing manually. The semantic model uses DirectQuery. What feature enables this?",
+  opts:["Push dataset streaming", "Incremental refresh", "Scheduled refresh", "Automatic page refresh"],
+  ans:3,
+  expl:"Automatic page refresh (APR) is designed for DirectQuery and live connection models. It automatically re-queries the data source at a defined interval (or when change detection detects new data), keeping visuals up to date without manual refresh. Scheduled refresh is for Import models." },
+
+// Enhance reports
+{ id:45, domain:"Visualize · Enhance Reports",
+  q:"You configure a bookmark that captures the current filter state, visual visibility, and slicer selections. When a user clicks a button linked to that bookmark, what happens?",
+  opts:["The report view resets to the state captured in the bookmark", "A PDF export of the current view is generated", "A new report page is created", "The report is saved and shared with the current state"],
+  ans:0,
+  expl:"Bookmarks capture a snapshot of a report page state including filters, slicer values, sort order, and visual visibility. When a user activates a bookmark (via a button, slicer, or bookmark navigator), the report updates to reflect that saved state — enabling guided storytelling or predefined views." },
+
+{ id:46, domain:"Visualize · Enhance Reports",
+  q:"You want clicking on a bar in a sales chart to take users to a detail page filtered for that specific product. Which feature enables this?",
+  opts:["Bookmarks", "Drill through", "Cross-filter", "Report tooltip"],
+  ans:1,
+  expl:"Drill through allows users to right-click (or use a button) on a data point in one page and navigate to a detail page pre-filtered for that value. You configure drill-through by adding a field to the 'Drill through' well on the target page. This is different from drill down (expanding hierarchy levels)." },
+
+{ id:47, domain:"Visualize · Enhance Reports",
+  q:"Sync slicers allow a slicer to control visuals on multiple report pages. When you enable 'Sync' for a slicer on Page 1 to also affect Page 2, but leave 'Visible' unchecked for Page 2, what is the result?",
+  opts:["An error occurs because Visible must always be checked when Sync is checked", "The slicer appears on Page 2 but is hidden", "Page 2 is filtered by the slicer selection from Page 1, but the slicer widget is not shown on Page 2", "Page 2 is unaffected by the slicer"],
+  ans:2,
+  expl:"The Sync Slicers pane has two columns: 'Sync' (the slicer filter applies to that page) and 'Visible' (the slicer widget is shown on that page). You can sync without making the slicer visible — the filter is applied but users see no slicer control on that page." },
+
+{ id:48, domain:"Visualize · Enhance Reports",
+  q:"A manager with visual impairment uses a screen reader. Which report design practice improves accessibility?",
+  opts:["Remove all interactive elements", "Use only table visuals instead of charts", "Use only dark background themes", "Add Alt Text to all visuals describing their content"],
+  ans:3,
+  expl:"Power BI supports accessibility features including Alt Text on visuals (read by screen readers), tab order configuration, keyboard navigation, and high contrast themes. Adding descriptive Alt Text to each visual is a fundamental accessibility requirement for reports consumed by users with visual impairments." },
+
+{ id:49, domain:"Visualize · Enhance Reports",
+  q:"You want a custom tooltip that shows a sparkline of monthly trend when a user hovers over a product name in a table. What must you create?",
+  opts:["A separate report page configured as a Tooltip page", "A custom visual imported from AppSource", "A DAX measure that generates sparkline data", "A calculated table with trend data"],
+  ans:0,
+  expl:"Custom tooltips in Power BI are built as dedicated report pages with the 'Tooltip' page property enabled. You design the tooltip page (add a sparkline, KPIs, etc.) and then configure visuals to use that page as their tooltip. This allows rich, data-driven hover experiences." },
+
+{ id:50, domain:"Visualize · Enhance Reports",
+  q:"You want users to be able to reorder columns in a table visual and change which measures are displayed, without you needing to publish a new version. Which feature enables this?",
+  opts:["Bookmarks", "Personalized visuals", "Conditional formatting", "Custom themes"],
+  ans:1,
+  expl:"Personalized visuals (when enabled by the report author) allow report consumers to modify visual type, fields, filters, and formatting for their own view, without editing the original report. Authors must explicitly enable this per visual or at report level." },
+
+{ id:51, domain:"Visualize · Enhance Reports",
+  q:"To design a report page for mobile devices in Power BI Desktop, what should you use?",
+  opts:["Use the custom page size option set to 768×1024", "Reduce the report canvas to a small size manually", "Use the Mobile Layout view in the View tab and arrange visuals for the phone form factor", "Create a separate .pbix file with phone dimensions"],
+  ans:2,
+  expl:"Power BI Desktop has a Mobile Layout view (View tab → Mobile layout) where you can drag and arrange visuals into a phone-friendly layout. This creates a separate phone layout for the same page without duplicating data or measures. The Power BI mobile app serves this layout to phone users." },
+
+// Identify patterns and trends
+{ id:52, domain:"Visualize · Patterns & Trends",
+  q:"The 'Analyze' feature in Power BI (right-click → Analyze → Explain the increase) uses which type of algorithm to identify contributing factors?",
+  opts:["Linear regression", "Neural network classification", "K-means clustering", "Decision tree decomposition"],
+  ans:3,
+  expl:"The 'Analyze' / 'Explain the increase/decrease' feature uses a decision tree-based algorithm to identify which dimension values (segments) contribute most to the change in a metric. It surfaces the most significant segments driving the difference between two periods or values." },
+
+{ id:53, domain:"Visualize · Patterns & Trends",
+  q:"You want to cluster customers into groups based on their purchasing behaviour using a scatter chart. Which AI-powered feature in Power BI should you use?",
+  opts:["Clustering (via scatter chart 'Find Clusters' option)", "Anomaly Detection", "Q&A visual", "Decomposition Tree"],
+  ans:0,
+  expl:"Power BI's scatter chart includes a built-in 'Find Clusters' option that automatically groups data points into clusters using a k-means algorithm. This AI visual feature identifies natural groupings in data without requiring custom DAX or external ML models." },
+
+{ id:54, domain:"Visualize · Patterns & Trends",
+  q:"You add a 'Forecast' to a line chart in Power BI. What type of data does this feature require?",
+  opts:["Any numeric column", "A date/time axis with continuous time series data", "A category axis with at least 10 values", "A DAX measure with FORECAST() function"],
+  ans:1,
+  expl:"Power BI's built-in forecasting (in the Analytics pane of a line chart) requires a continuous date/time axis. It uses exponential smoothing to project future values and displays confidence intervals. It does not work with category axes or non-continuous time series." },
+
+{ id:55, domain:"Visualize · Patterns & Trends",
+  q:"Which visual is best suited for showing hierarchical data where each branch's size represents a proportional value (e.g., sales by Region → Country → City)?",
+  opts:["Matrix visual", "Funnel chart", "Treemap", "Stacked bar chart"],
+  ans:2,
+  expl:"A Treemap displays hierarchical data as nested rectangles, where each rectangle's area is proportional to the value it represents. It is well-suited for showing part-to-whole relationships across multiple hierarchy levels. The Decomposition Tree is for AI-driven root cause analysis, not general proportional hierarchies." },
+
+{ id:56, domain:"Visualize · Patterns & Trends",
+  q:"You configure Anomaly Detection in a line chart. What does the shaded band around the line represent?",
+  opts:["The confidence interval for the regression line", "The min/max range of historical data", "The forecasted future values", "The expected range of values — points outside this band are flagged as anomalies"],
+  ans:3,
+  expl:"Power BI's Anomaly Detection (in the Analytics pane) calculates an expected range for each data point based on surrounding values and seasonal patterns. Points that fall outside this expected range are flagged as anomalies. The shaded band represents the expected range." },
+
+{ id:57, domain:"Visualize · Patterns & Trends",
+  q:"You use grouping to segment customers by age into buckets (18-25, 26-35, 36-50, 50+). Which Power BI feature creates these buckets from a continuous numeric column?",
+  opts:["Binning", "Clustering", "Conditional column in Power Query", "Calculated column with IF/SWITCH"],
+  ans:0,
+  expl:"Power BI's Binning feature (right-click a numeric field → New group → Bin type) automatically creates equal-width or equal-count buckets from a continuous numeric field. For custom ranges, a conditional column in Power Query or a DAX calculated column with SWITCH() is also valid, but binning is the built-in visual grouping feature." },
+
+{ id:58, domain:"Visualize · Patterns & Trends",
+  q:"The Decomposition Tree visual in Power BI allows users to:",
+  opts:["Drill down through a fixed predefined hierarchy", "Dynamically select which dimensions to break down a metric by, and use AI-driven 'High value' / 'Low value' to automatically find the most interesting splits", "Forecast future values based on historical trends", "Display a waterfall breakdown of metric changes over time"],
+  ans:1,
+  expl:"The Decomposition Tree is an AI visual that allows interactive drill-down into a metric across dimensions chosen at query time. The AI splits option ('High value' / 'Low value') automatically identifies the next dimension that best explains the variation, making it useful for ad hoc root cause analysis." },
+
+{ id:59, domain:"Visualize · Patterns & Trends",
+  q:"You add a Constant Line at value 1,000,000 to a bar chart in the Analytics pane. What does this line represent?",
+  opts:["A dynamic threshold calculated by AI", "A forecast line", "A reference line drawn at a fixed or measure-driven value to compare data against a target", "A control limit based on standard deviation"],
+  ans:2,
+  expl:"Reference lines (constant, min, max, average, median, percentile) in the Analytics pane are drawn on the chart to provide visual context for comparing data points against a target, average, or threshold. They do not change with data — unless configured as a Measure-based line." },
+
+{ id:60, domain:"Visualize · Patterns & Trends",
+  q:"You want to use Copilot in Power BI to summarise the key insights of a semantic model for a business user. Which option enables this directly in the Power BI service?",
+  opts:["Create a narrative visual and configure it to use Copilot", "Use Azure OpenAI Service via a custom API", "Export to Excel and summarise in Copilot for Excel", "Use the 'Copilot' pane in the Power BI service to ask questions and get summaries of the semantic model"],
+  ans:3,
+  expl:"Power BI's Copilot pane (available in the Power BI service for Fabric-enabled capacities) allows users to ask natural language questions about the semantic model and receive AI-generated summaries, insights, and report page suggestions. This is the built-in Power BI Copilot feature described in the PL-300 study guide." },
+
+{ id:61, domain:"Visualize · Patterns & Trends",
+  q:"You want to use the Q&A visual to allow users to type natural language questions. A user types 'sales by region as a bar chart' and receives a column chart instead. How can you improve Q&A accuracy?",
+  opts:["Add synonyms and define relationships in the Q&A setup to teach it preferred terminology", "Rebuild the entire semantic model", "Switch to a paginated report instead", "Add the visual type as a calculated column"],
+  ans:0,
+  expl:"Q&A can be trained using the Q&A setup (Manage Q&A) where you can add synonyms for field names, define preferred phrasings, and review/correct suggested questions. Teaching Q&A your organisation's terminology improves its ability to interpret natural language queries correctly." },
+
+{ id:62, domain:"Visualize · Patterns & Trends",
+  q:"You configure a Key Influencers visual. The 'Influences' tab shows which factors increase or decrease a target metric. What does the bubble size in the 'Top Segments' tab represent?",
+  opts:["The number of influencer fields analysed", "The size of the segment (number of records in that segment)", "The strength of the correlation coefficient", "The confidence interval width"],
+  ans:1,
+  expl:"In the Key Influencers visual, the 'Top Segments' tab shows bubbles where the size represents the volume (number of data points) in each segment, and the position (vertical) represents the average value of the metric for that segment. Larger bubbles contain more data points." },
+
+{ id:63, domain:"Visualize · Patterns & Trends",
+  q:"A business user asks: 'I want to see sales grouped by order size — small (<1000), medium (1000–5000), large (>5000) — but without changing the underlying data'. What Power BI feature enables this?",
+  opts:["Conditional formatting rules", "DAX calculated column using SWITCH()", "Grouping feature in the Fields pane (right-click → New group → List)", "Column Quality view in Power Query"],
+  ans:2,
+  expl:"Power BI's visual grouping (right-click a field in the Fields pane → New group) allows you to create list-based or bin-based groups without modifying the underlying data or adding calculated columns. For numeric ranges, choose 'Bin type' and specify bin size or number." },
+
+{ id:64, domain:"Visualize · Create Reports",
+  q:"You need to export a Power BI report as a .pdf with precise multi-page formatting for a regulatory submission. Which export option should you choose?",
+  opts:["Export to PowerPoint", "Export to Excel", "Export to PDF (from Power BI report)", "Use a paginated report and export to PDF"],
+  ans:3,
+  expl:"For pixel-perfect, multi-page formatted PDF output (like regulatory submissions), paginated reports (.rdl, built with Power BI Report Builder) are the correct choice. They are specifically designed for controlled, print-ready output. A Power BI report's PDF export preserves the page layout but is not pixel-perfect in the same way." },
+
+// ── DOMAIN 4: MANAGE AND SECURE POWER BI (19 questions) ──────────
+
+// Workspaces and assets
+{ id:65, domain:"Manage · Workspaces & Assets",
+  q:"Which workspace role allows a user to publish reports and edit semantic models, but NOT change workspace settings or manage user access?",
+  opts:["Contributor", "Viewer", "Admin", "Member"],
+  ans:0,
+  expl:"The Contributor role can publish, edit, and delete content in a workspace but cannot update workspace settings, add/remove users, or publish workspace apps. The Member role can do everything Contributors can plus publish and update apps. Admin has full control." },
+
+{ id:66, domain:"Manage · Workspaces & Assets",
+  q:"Row-level security (RLS) filters apply to which workspace role?",
+  opts:["Admin and Member only", "Viewer role only — Admins, Members, and Contributors are excluded from RLS", "All roles when the semantic model is in DirectQuery mode", "All roles including Admin"],
+  ans:1,
+  expl:"RLS restricts data access for users with the Viewer role. It does NOT apply to Admins, Members, or Contributors because they have edit permission on the semantic model. To enforce RLS on a team member, they should be assigned the Viewer role, not a higher role." },
+
+{ id:67, domain:"Manage · Workspaces & Assets",
+  q:"You want to distribute a curated set of reports and dashboards to 500 business users who should not see the workspace content list. What is the best distribution method?",
+  opts:["Create a Dashboard and share it from My Workspace", "Give all 500 users the Viewer role in the workspace", "Publish a workspace app and grant access to the users or a security group", "Share each report individually with all 500 users"],
+  ans:2,
+  expl:"A workspace app provides a curated, consumer-facing experience that hides the workspace content list from users. Users access reports via the app without needing workspace access. This is the recommended distribution method for large audiences and supports security group assignment." },
+
+{ id:68, domain:"Manage · Workspaces & Assets",
+  q:"A semantic model's data is sourced from an on-premises SQL Server. Scheduled refresh is configured in the Power BI service. The refresh fails with 'Gateway not reachable'. What is the most likely cause?",
+  opts:["The scheduled refresh frequency exceeds the Pro license limit", "The SQL Server firewall is blocking all connections", "The semantic model has too many rows", "The on-premises data gateway service is offline or cannot sign in to Windows"],
+  ans:3,
+  expl:"The most common cause of 'Gateway not reachable' errors is that the on-premises data gateway service is stopped, the Windows service account cannot sign in, or the machine hosting the gateway is offline. The gateway must be running and online for scheduled refresh to succeed." },
+
+{ id:69, domain:"Manage · Workspaces & Assets",
+  q:"A shared capacity workspace allows up to how many scheduled refreshes per day for an imported semantic model?",
+  opts:["8 times", "24 times", "48 times", "4 times"],
+  ans:0,
+  expl:"Import semantic models in shared capacity (Pro or free workspaces) support up to 8 scheduled refreshes per day. Premium capacity (or Premium Per User) supports up to 48 scheduled refreshes per day. This is a key PL-300 exam fact." },
+
+{ id:70, domain:"Manage · Workspaces & Assets",
+  q:"What is the purpose of endorsing Power BI content as 'Certified'?",
+  opts:["It grants the content higher refresh priority in Premium capacity", "It signals to consumers that the content has been reviewed and approved by designated certifiers and meets organisational quality standards", "It encrypts the semantic model with an additional layer of security", "It enables the content to appear in the Power BI home featured section only"],
+  ans:1,
+  expl:"Certification is a form of endorsement that indicates content has been reviewed and approved by a designated certifier (configured by tenant admins). It signals trustworthiness and quality to consumers browsing for data. 'Promoted' is self-service; 'Certified' requires approval from authorised certifiers." },
+
+{ id:71, domain:"Manage · Workspaces & Assets",
+  q:"You want to alert a specific user whenever the 'Daily Sales' measure on a dashboard tile exceeds £1,000,000. Which feature should you use?",
+  opts:["A Power Automate flow triggered by a dataset refresh", "Scheduled email subscription", "Data alert on a dashboard tile", "Anomaly detection on the report"],
+  ans:2,
+  expl:"Data alerts can be set on dashboard tiles that display a single number (card, KPI, gauge). When the value exceeds (or falls below) a configured threshold, Power BI sends an email notification. Alerts are set per user on dashboard tiles — not on report visuals." },
+
+{ id:72, domain:"Manage · Workspaces & Assets",
+  q:"You publish a Power BI app. Users report they are not seeing the latest reports. What is the most likely reason?",
+  opts:["Users need to clear their browser cache", "The workspace license has expired", "The semantic model has not been refreshed", "The app has not been updated and republished after the reports were modified"],
+  ans:3,
+  expl:"When you publish a workspace app, it creates a snapshot of the workspace content at that point. If you subsequently modify reports in the workspace, users of the app do NOT automatically see the changes — you must explicitly update and republish the app for changes to reach consumers." },
+
+{ id:73, domain:"Manage · Workspaces & Assets",
+  q:"Which type of gateway is recommended for production environments connecting multiple semantic models to on-premises data sources?",
+  opts:["Enterprise (standard mode, on-premises) gateway", "VPN gateway", "Cloud gateway", "Personal gateway"],
+  ans:0,
+  expl:"The standard on-premises data gateway (enterprise gateway) supports multiple users, multiple semantic models, dataflows, and paginated reports. Microsoft explicitly recommends using an enterprise gateway for production environments rather than a personal gateway, which only supports a single user and fewer features." },
+
+// Secure and govern
+{ id:74, domain:"Manage · Security",
+  q:"You define a RLS role in Power BI Desktop with the filter: [Region] = USERNAME(). What type of RLS is this?",
+  opts:["Static RLS", "Dynamic RLS", "Object-Level Security", "Column-level security"],
+  ans:1,
+  expl:"Dynamic RLS uses DAX functions like USERNAME() or USERPRINCIPALNAME() to filter data based on the identity of the logged-in user. The same role applies to all users but returns different data per user. Static RLS uses hard-coded filter values and requires a separate role for each group." },
+
+{ id:75, domain:"Manage · Security",
+  q:"A user is a Viewer in a workspace and is assigned to an RLS role that filters data to 'Europe'. They use Analyze in Excel to connect to the semantic model. What data do they see?",
+  opts:["All data, because Analyze in Excel uses a DirectQuery connection that bypasses RLS", "All data, because Excel connections bypass RLS", "Only Europe data, because RLS applies when Viewers use Analyze in Excel", "No data, because Viewers cannot use Analyze in Excel"],
+  ans:2,
+  expl:"Even if Viewers are granted Build permission (required for Analyze in Excel), RLS still applies to them. RLS restricts data access for the Viewer role regardless of how they connect — including Analyze in Excel, direct connections via XMLA, or app consumption." },
+
+{ id:76, domain:"Manage · Security",
+  q:"What is Object-Level Security (OLS) used for in Power BI?",
+  opts:["Controlling which workspace role a user is assigned", "Applying sensitivity labels to semantic models", "Restricting which rows of data a user can see", "Hiding entire tables or columns from specific roles so users cannot see those objects or their metadata"],
+  ans:3,
+  expl:"Object-Level Security (OLS) hides specific tables or columns from defined roles. Users in an OLS-restricted role cannot see the table/column, its metadata, or use it in calculations. RLS restricts rows; OLS restricts objects (columns/tables). OLS is configured via external tools like Tabular Editor." },
+
+{ id:77, domain:"Manage · Security",
+  q:"Which tool is currently required to configure Object-Level Security (OLS) on a Power BI semantic model?",
+  opts:["External tools such as Tabular Editor", "The on-premises data gateway admin portal", "Power BI Desktop security panel", "Power BI service security settings"],
+  ans:0,
+  expl:"As of the current exam objectives, OLS cannot be configured natively in Power BI Desktop. You must use an external tool such as Tabular Editor (available via the External Tools ribbon in Power BI Desktop) to set OLS table/column permissions on roles, then publish the model." },
+
+{ id:78, domain:"Manage · Security",
+  q:"You apply a sensitivity label 'Confidential' to a Power BI report and the user exports it to Excel. What happens to the sensitivity label?",
+  opts:["The label is removed because Excel has a different classification system", "The Excel file inherits the 'Confidential' sensitivity label from the Power BI report", "The user must manually apply the label in Excel", "The export is blocked because of the sensitivity label"],
+  ans:1,
+  expl:"Sensitivity labels from Microsoft Purview Information Protection persist when content is exported from Power BI to Excel, PowerPoint, PDF, and .pbix files. The exported file inherits the label and any associated protection (e.g., encryption). This is part of Power BI's information protection integration." },
+
+{ id:79, domain:"Manage · Security",
+  q:"You need to enforce RLS in a workspace where a business analyst has the Contributor role. The analyst should only see their own region's data. What must you change?",
+  opts:["Add the analyst to the workspace Admin group with RLS filters", "Assign the analyst a separate RLS role in addition to Contributor", "Move the analyst to the Viewer role — RLS only applies to Viewers", "Enable bidirectional cross-filtering on all relationships"],
+  ans:2,
+  expl:"RLS does not apply to Admins, Members, or Contributors because they have edit permission on the semantic model. To enforce RLS, the analyst must be assigned the Viewer role in the workspace. If they need to create content, consider using separate workspaces for authoring vs. consuming." },
+
+{ id:80, domain:"Manage · Security",
+  q:"A sensitivity label with encryption is applied to a .pbix file. A guest (B2B) user tries to open the file in Power BI Desktop. What happens?",
+  opts:["The label is automatically removed so the guest can access the file", "The guest is prompted to re-authenticate with their home tenant credentials", "The file opens normally because guest users have the same rights as internal users", "The file fails to open — directly publishing or opening protected .pbix files is not supported for guest users"],
+  ans:3,
+  expl:"Power BI's information protection documentation states that directly publishing a protected .pbix file from Power BI Desktop to the service is not supported for guest users. Guest users can access content via the Power BI service (using Get Data), but not by opening a locally protected .pbix directly." },
+
+{ id:81, domain:"Manage · Security",
+  q:"Which sensitivity label protection type is NOT supported by Power BI?",
+  opts:["Do Not Forward", "Encrypt and restrict access", "Confidential", "Internal"],
+  ans:0,
+  expl:"Power BI does not support sensitivity labels of the 'Do Not Forward', user-defined, or HYOK protection types. Labels with these protection types (defined in the Microsoft Purview compliance portal) cannot be applied to Power BI content. Standard labels with encryption are supported." },
+
+{ id:82, domain:"Manage · Workspaces & Assets",
+  q:"You want to create a dashboard in Power BI. Which statement is correct about dashboards?",
+  opts:["Dashboards support full interactive filtering with slicers", "Dashboards can contain visuals from multiple reports and semantic models", "Dashboards support drill-through navigation like reports", "Dashboards can only contain visuals from a single report"],
+  ans:1,
+  expl:"Power BI dashboards are single-page canvases composed of pinned tiles that can come from multiple reports, semantic models, Excel workbooks, and even manual inputs. Dashboards do not support slicers or drill-through — they are primarily for high-level monitoring, not interactive analysis." },
+
+{ id:83, domain:"Manage · Workspaces & Assets",
+  q:"Disabling a user account in Microsoft Entra ID removes their Power BI workspace access records. Is this statement true or false?",
+  opts:["False — but only for Premium workspaces; shared capacity workspaces remove access immediately", "True — disabling the account immediately removes all Power BI access", "False — disabling a user in Entra ID does not remove Power BI workspace access records; these persist until the account is permanently (hard) deleted", "True — workspace access is automatically revoked within 24 hours"],
+  ans:2,
+  expl:"According to Microsoft documentation, disabling a user in Microsoft Entra ID does NOT remove their Power BI workspace access records. This is by design to prevent accidental data loss and allow restoration if the account is re-enabled. Access records are only removed when the account is permanently (hard) deleted from Entra ID." },
+
+// Bonus stretch questions
+{ id:84, domain:"Prepare · Transform & Load",
+  q:"You have a Power Query step 'Changed Type' that converts a column to Date type. The step appears AFTER a 'Filtered Rows' step. Why might this reduce performance compared to placing the type change before the filter?",
+  opts:["Order of steps in Power Query never affects performance", "Type changes break query folding permanently regardless of position", "Type changes are always slower than filter operations", "Placing a type change after filtering means Power BI first loads all rows, then filters — reversing the order can enable query folding that pushes the filter to the source before data is retrieved"],
+  ans:3,
+  expl:"The order of transformation steps in Power Query affects query folding. If filtering is placed before steps that break folding (like certain type conversions with complex logic), the filter can be pushed to the source, reducing the amount of data retrieved. Always aim to filter early and keep foldable operations together." },
+
+{ id:85, domain:"Model · Semantic Model Design",
+  q:"You have a Sales fact table and a Date dimension. The relationship uses Sales[OrderDateKey] (Integer) → Date[DateKey] (Integer). What type of cardinality should this relationship be?",
+  opts:["One-to-many (Date is the 'one' side, Sales is the 'many' side)", "Many-to-one (Sales is the 'one' side)", "Many-to-many", "One-to-one"],
+  ans:0,
+  expl:"In a star schema, the dimension table (Date) is the 'one' side and the fact table (Sales) is the 'many' side — each date can appear many times in Sales transactions. This is a one-to-many relationship from Date to Sales. The filter propagates from Date (one) to Sales (many)." },
+
+{ id:86, domain:"Model · DAX",
+  q:"You want a measure to calculate the ratio of a subcategory's sales to its parent category's total, regardless of cross-filters from other tables. Which function preserves the category filter while removing the subcategory filter?",
+  opts:["ALL(Product[Subcategory])", "ALLEXCEPT(Product, Product[Category])", "REMOVEFILTERS(Product)", "KEEPFILTERS(Product[Category])"],
+  ans:1,
+  expl:"ALLEXCEPT(Product, Product[Category]) removes all filters from the Product table EXCEPT the Category column. This means the total is calculated for the current category (keeping the category filter) but ignores any subcategory filter — the standard pattern for % of parent category calculations." },
+
+{ id:87, domain:"Visualize · Enhance Reports",
+  q:"You want a navigation button on a report page that takes users to a specific page when clicked. What properties must you configure on the button?",
+  opts:["Action type = Q&A to open the Q&A visual", "Action type = Bookmark, with a bookmark that captures the target page state", "Action type = Page Navigation, with the target page specified", "Action type = Web URL with the report URL"],
+  ans:2,
+  expl:"Power BI buttons support a 'Page Navigation' action type that directly navigates to a selected report page when clicked. This is simpler than using bookmarks for page navigation, though bookmarks can also achieve this if they capture visible page state." },
+
+{ id:88, domain:"Manage · Security",
+  q:"An employee leaves the company and their Microsoft Entra ID account is permanently deleted. What automatically happens to their Power BI workspace role assignments?",
+  opts:["An admin must manually remove them from all workspace roles", "Their access continues indefinitely because Power BI stores permissions independently", "Their role assignments are immediately removed when the account is disabled", "Their role assignments are removed when the account is permanently deleted from Entra ID"],
+  ans:3,
+  expl:"When a user account is permanently (hard) deleted from Microsoft Entra ID, their Power BI workspace access records are also removed. While the account is merely disabled (not deleted), Power BI access records persist by design." },
+
+{ id:89, domain:"Prepare · Get & Connect",
+  q:"Import mode semantic models in Power BI Premium capacity (P1 SKU and above) support up to how many scheduled refreshes per day?",
+  opts:["48", "Unlimited", "8", "24"],
+  ans:0,
+  expl:"Premium capacity (and Premium Per User / PPU) semantic models support up to 48 scheduled data refreshes per day, compared to 8 for shared capacity. This is a frequently tested figure in PL-300 and a key reason organisations adopt Premium for data-intensive scenarios." },
+
+{ id:90, domain:"Model · Optimize Performance",
+  q:"Performance Analyzer in Power BI Desktop shows a visual's query taking 12 seconds. The majority of the time is in 'DAX query'. What is the best first diagnostic step?",
+  opts:["Rebuild the entire semantic model", "Copy the DAX query from Performance Analyzer and analyse it in DAX Studio for performance bottlenecks", "Add more RAM to the server", "Switch the visual to a table type"],
+  ans:1,
+  expl:"Performance Analyzer lets you capture and copy the DAX query generated for a visual. Pasting this into DAX Studio (a free external tool) allows detailed analysis including server timings, storage engine vs. formula engine breakdown, and identification of slow CALCULATE expressions or large table scans." },
+
+{ id:91, domain:"Visualize · Create Reports",
+  q:"You are creating a report that must meet WCAG accessibility standards. Which report design action specifically supports keyboard navigation accessibility?",
+  opts:["Enabling automatic page refresh", "Applying a dark theme", "Configuring the Tab Order of visuals in the Selection pane", "Using only table and matrix visuals"],
+  ans:2,
+  expl:"Power BI supports keyboard navigation for accessibility. The Tab Order in the Selection pane controls the sequence in which screen readers and keyboard navigation move through visuals on the page. Setting a logical tab order (and hiding decorative elements) is a specific WCAG accessibility practice supported in Power BI." },
+
+{ id:92, domain:"Manage · Workspaces & Assets",
+  q:"You configure a data alert on a dashboard card tile. The measured value crosses the alert threshold multiple times in one day. How many email notifications does the user receive?",
+  opts:["One notification per hour at most", "Notifications stop after the first email unless the user resets the alert", "One notification per crossing", "One notification per day maximum, regardless of how many times the threshold is crossed"],
+  ans:3,
+  expl:"Power BI data alerts are designed to avoid email floods. At most one notification email is sent per day for a given alert. If the threshold is crossed multiple times in a day, the user still receives only one email notification in that period." },
+
+{ id:93, domain:"Prepare · Profile & Clean",
+  q:"In Power Query, 'Column Profile' (when set to profile based on the entire dataset) shows 'Value Distribution' for a column. The number of 'Unique' values is 1,000 but 'Distinct' values is 850. What does this indicate?",
+  opts:["150 values appear more than once — 850 values are distinct (appear at least once), but only 1,000 rows exist total with some repeated values", "The column has 150 null values", "Query folding is broken", "There are 850 duplicate rows in the dataset"],
+  ans:0,
+  expl:"In Power Query Column Profile, 'Distinct' = count of values that appear at least once (including duplicates). 'Unique' = values that appear exactly once. If Distinct (850) < Total rows, some values appear multiple times. The gap between Distinct and total count indicates duplicate values." },
+
+{ id:94, domain:"Model · DAX",
+  q:"A measure is: Total Sales = SUM(Sales[Amount]). You create another measure: Sales % of All = DIVIDE([Total Sales], CALCULATE([Total Sales], ALL(Sales))). What does 'ALL(Sales)' do here?",
+  opts:["Removes filters from the Sales table's Amount column only", "Removes all filters from the entire Sales table so the denominator equals the grand total regardless of any slicers", "Returns all rows of the Sales table as a table expression", "Removes relationship-based filters from related tables"],
+  ans:1,
+  expl:"ALL(Sales) as a filter modifier inside CALCULATE removes all filters applied to the Sales table, making the denominator the unconstrained grand total. This is the standard % of total pattern. ALL() on a whole table removes all column filters on that table, not just one column." },
+
+{ id:95, domain:"Visualize · Enhance Reports",
+  q:"A report has a slicer for 'Year'. You want the slicer selection to automatically update a second slicer for 'Quarter' to only show quarters that exist in the selected year. Which feature achieves this?",
+  opts:["Bookmarks that capture different slicer states", "Sync slicers", "Cross-filter interactions between slicers (slicer A filters slicer B via their shared relationship in the model)", "Drill-through from year to quarter"],
+  ans:2,
+  expl:"In Power BI, slicers are visuals that interact with each other through the data model's relationships. If the Year slicer filters the Date table, and Quarter is also from the Date table, the Quarter slicer will automatically show only the quarters in the selected year via cross-filter propagation through the model." },
+
+{ id:96, domain:"Manage · Security",
+  q:"You want to test that a RLS role called 'Europe Manager' shows the correct data before publishing the report. What feature in Power BI Desktop allows this?",
+  opts:["Export to Excel and compare", "Use the Performance Analyzer while filtering manually", "Preview filters in Power Query", "View as role (Test as role) in the Modeling tab security settings"],
+  ans:3,
+  expl:"In Power BI Desktop (Modeling tab → View as → Roles), you can test how the report looks when viewed with a specific RLS role applied. This allows you to validate that the role filters correctly before publishing. In the Power BI service, the same is available as 'Test as role' on the semantic model security page." },
+
+{ id:97, domain:"Prepare · Transform & Load",
+  q:"You need to create a calculated column that categorises products as 'High', 'Medium', or 'Low' based on their price. Should you do this in Power Query or DAX? What is the key reason?",
+  opts:["DAX calculated column — because it stores the result in the model and is computed at refresh, while Power Query transformations run during data load and leverage query folding for potential performance benefits at the source", "Power Query — because DAX cannot reference columns in different tables", "DAX calculated column — because Power Query cannot use conditional logic", "Power Query — because SWITCH() does not exist in Power Query"],
+  ans:0,
+  expl:"Both Power Query (Conditional Column) and DAX (calculated column) can create this categorisation. However, doing it in Power Query is generally preferred because Power Query transformations can be query-folded (pushed to the source), reducing memory load. DAX calculated columns are stored in the model and add to VertiPaq memory. The exam tests understanding that Power Query is the preferred place for data preparation logic." },
+
+{ id:98, domain:"Model · Semantic Model Design",
+  q:"You configure a 'Dual' storage mode for a Date dimension table in a composite model. What does Dual mode mean?",
+  opts:["The table exists in both Import and DirectQuery sources simultaneously", "The table is both cached in memory (like Import) and can be queried from the source (like DirectQuery), and Power BI chooses the most efficient mode per query", "The table is replicated across two data centres", "The table supports both row-level and object-level security simultaneously"],
+  ans:1,
+  expl:"Dual storage mode means the table is cached in memory AND can be queried via DirectQuery. Power BI automatically determines the most efficient approach per query. Dual is especially useful for dimension tables in composite models — when the fact table is DirectQuery, a Dual dimension can be served from cache, reducing source queries and eliminating limited relationships." },
+
+{ id:99, domain:"Visualize · Create Reports",
+  q:"Which visual in Power BI is best for showing progress towards a single target value — for example, 'Achieved 75% of Q3 sales target'?",
+  opts:["100% stacked bar chart", "Funnel chart", "KPI visual or Gauge visual", "Treemap"],
+  ans:2,
+  expl:"Both the KPI visual (showing value, trend, and target) and the Gauge visual (showing a needle on a dial) are designed for displaying progress towards a single goal. For a percentage of target, a KPI card with the metric and target defined is the most common choice in Power BI reports." },
+
+{ id:100, domain:"Manage · Workspaces & Assets",
+  q:"You need to allow a team of analysts to build their own reports from a governed semantic model without giving them access to the source data or the workspace where the model lives. Which permission should you grant?",
+  opts:["Read-only access via the workspace app", "Viewer role in the workspace", "Contributor role in the workspace", "Build permission on the semantic model"],
+  ans:3,
+  expl:"Build permission on a semantic model allows users to create new reports, Analyze in Excel, query via XMLA, and other build actions — without needing workspace access. This is the correct permission for self-service analytics where analysts build on a governed model but should not see or modify the source workspace." }
+];
+
+// ═══════════════════════════════════════════════════════
+// TOPIC CATEGORIES (for filter chips)
+// ═══════════════════════════════════════════════════════
+// TOPICS computed below from ALL_QUESTIONS
+// const TOPICS_OLD = [...new Set(QUESTIONS.map(q => q.domain))].sort();
+
+
+// Compute topics from question bank
+const TOPICS = [...new Set(ALL_QUESTIONS.map(q => q.domain))].sort();
+
+
+// ══════════════════════════════════════════════════════════
+// TOPIC CHIPS — built from question domains
+// ══════════════════════════════════════════════════════════
+let selectedTopics = new Set();
+
+function buildTopicChips() {
+  const container = document.getElementById('topic-chips');
+  TOPICS.forEach(topic => {
+    const chip = document.createElement('span');
+    chip.className = 'topic-chip';
+    chip.dataset.topic = topic;
+    chip.textContent = topic;
+    chip.onclick = () => toggleTopic(chip);
+    container.appendChild(chip);
+  });
+}
+
+function toggleTopic(el) {
+  const topic = el.dataset.topic;
+  if (selectedTopics.has(topic)) {
+    selectedTopics.delete(topic);
+    el.classList.remove('active');
+  } else {
+    selectedTopics.add(topic);
+    el.classList.add('active');
+  }
+  updateFilterSummary();
+}
+
+function updateFilterSummary() {
+  const el = document.getElementById('filter-summary');
+  if (!el) return;
+  if (selectedTopics.size === 0) {
+    el.textContent = '';
+  } else {
+    const matching = ALL_QUESTIONS.filter(q => selectedTopics.has(q.domain)).length;
+    el.textContent = `✓ ${selectedTopics.size} topic${selectedTopics.size > 1 ? 's' : ''} selected · ${matching} questions available`;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// GAME STATE
+// ══════════════════════════════════════════════════════════
+let state = {
+  mode: 'classic',
+  playerName: 'Player',
+  questions: [],
+  current: 0,
+  score: 0,
+  streak: 0,
+  bestStreak: 0,
+  combo: 1,
+  correct: 0,
+  wrong: 0,
+  missed: [],
+  timer: null,
+  timeLeft: 30,
+  maxTime: 30,
+  answered: false,
+  active: false
+};
+
+const MODE_CONFIG = {
+  quick:     { count: 10,  time: 15, base: 100, lightning: false, hints: true  },
+  classic:   { count: 25,  time: 30, base: 200, lightning: false, hints: true  },
+  lightning: { count: 999, time: 20, base: 150, lightning: true,  hints: false },
+  exam:      { count: 50,  time: 45, base: 100, lightning: false, hints: false }
+};
+
+// ══════════════════════════════════════════════════════════
+// SCREEN MANAGEMENT
+// ══════════════════════════════════════════════════════════
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function selectMode(mode) {
+  state.mode = mode;
+  showScreen('name');
+  document.getElementById('player-name-input').focus();
+}
+
+function startGame() {
+  const name = document.getElementById('player-name-input').value.trim() || 'Anon';
+  state.playerName = name;
+  const cfg = MODE_CONFIG[state.mode];
+
+  const pool = selectedTopics.size > 0
+    ? ALL_QUESTIONS.filter(q => selectedTopics.has(q.domain))
+    : ALL_QUESTIONS;
+  if (pool.length === 0) { alert('No questions match the selected topics. Please select different topics.'); return; }
+  const shuffled = [...pool].sort(() => Math.random() - 0.5);
+  state.questions = shuffled.slice(0, Math.min(cfg.count, shuffled.length));
+
+  state.current = 0;
+  state.score = 0;
+  state.streak = 0;
+  state.bestStreak = 0;
+  state.combo = 1;
+  state.correct = 0;
+  state.wrong = 0;
+  state.missed = [];
+  state.maxTime = cfg.time;
+  state.active = true;
+
+  document.getElementById('player-display').textContent = name;
+  document.getElementById('lightning-banner').classList.toggle('visible', cfg.lightning);
+
+  showScreen('game');
+  loadQuestion();
+}
+
+// ══════════════════════════════════════════════════════════
+// QUESTION LOADING
+// ══════════════════════════════════════════════════════════
+function loadQuestion() {
+  const cfg = MODE_CONFIG[state.mode];
+  const q = state.questions[state.current];
+  const total = state.mode === 'lightning' ? '∞' : state.questions.length;
+
+  state.answered = false;
+
+  const pct = state.mode === 'lightning' ? 0 : (state.current / state.questions.length * 100);
+  document.getElementById('progress-bar').style.width = pct + '%';
+
+  document.getElementById('q-category').textContent = q.domain;
+  document.getElementById('q-number').textContent = `Question ${state.current + 1} of ${total}`;
+  document.getElementById('q-text').textContent = q.q;
+
+  // Answers — shuffle display order like PL300 did, but use DP100 button style
+  const grid = document.getElementById('answers-grid');
+  grid.innerHTML = '';
+  const keys = ['A', 'B', 'C', 'D'];
+  // Shuffle display indices
+  const indices = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+  // Map displayed position → original index
+  state.displayMap = indices; // indices[displayPos] = origIdx
+
+  indices.forEach((origIdx, displayPos) => {
+    const btn = document.createElement('button');
+    btn.className = 'answer-btn';
+    btn.innerHTML = `<span class="answer-key">${keys[displayPos]}</span>${q.opts[origIdx]}`;
+    btn.onclick = () => selectAnswer(origIdx);
+    grid.appendChild(btn);
+  });
+
+  const exp = document.getElementById('explanation-panel');
+  exp.classList.remove('visible');
+  exp.innerHTML = '';
+
+  document.getElementById('next-btn').style.display = 'none';
+
+  updateFlames();
+
+  let time = cfg.time;
+  if (state.mode === 'lightning') {
+    time = Math.max(8, cfg.time - Math.floor(state.current / 3) * 2);
+  }
+  state.maxTime = time;
+  startTimer(time);
+}
+
+// ══════════════════════════════════════════════════════════
+// ANSWER SELECTION
+// ══════════════════════════════════════════════════════════
+function selectAnswer(origIdx) {
+  if (state.answered) return;
+  state.answered = true;
+  clearInterval(state.timer);
+
+  const q = state.questions[state.current];
+  const cfg = MODE_CONFIG[state.mode];
+  const btns = document.querySelectorAll('.answer-btn');
+  const timeBonus = Math.floor((state.timeLeft / state.maxTime) * cfg.base * 0.5);
+
+  btns.forEach(b => b.disabled = true);
+
+  // Find which button corresponds to which origIdx
+  const displayMap = state.displayMap;
+
+  if (origIdx === q.ans) {
+    // CORRECT
+    state.correct++;
+    state.streak++;
+    if (state.streak > state.bestStreak) state.bestStreak = state.streak;
+
+    if (state.streak >= 5) state.combo = 3;
+    else if (state.streak >= 3) state.combo = 2;
+    else state.combo = 1;
+
+    const pts = Math.round((cfg.base + timeBonus) * state.combo);
+    state.score += pts;
+
+    // Highlight the clicked button
+    const clickedPos = displayMap.indexOf(origIdx);
+    btns[clickedPos].classList.add('correct');
+    document.getElementById('score-val').textContent = state.score;
+
+    showFloatingPts('+' + pts, true, state.combo > 1 ? ` ×${state.combo}` : '');
+
+    const comboEl = document.getElementById('combo-display');
+    comboEl.textContent = `×${state.combo}`;
+    comboEl.classList.toggle('active', state.combo > 1);
+
+    updateFlames();
+    spawnParticles();
+
+  } else {
+    // WRONG
+    state.wrong++;
+    state.missed.push({ q: q.q.substring(0, 80) + '…', correct: q.opts[q.ans], category: q.domain });
+    state.streak = 0;
+    state.combo = 1;
+    document.getElementById('combo-display').textContent = '×1';
+    document.getElementById('combo-display').classList.remove('active');
+
+    const clickedPos = displayMap.indexOf(origIdx);
+    const correctPos = displayMap.indexOf(q.ans);
+    btns[clickedPos].classList.add('wrong');
+    btns[correctPos].classList.add('reveal-correct');
+    updateFlames();
+
+    if (cfg.lightning) {
+      setTimeout(() => endGame(), 1200);
+      showExplanation(q, cfg.hints);
+      return;
+    }
+  }
+
+  showExplanation(q, cfg.hints);
+  document.getElementById('next-btn').style.display = 'inline-flex';
+}
+
+function showExplanation(q, hintsEnabled) {
+  if (!hintsEnabled) return;
+  const exp = document.getElementById('explanation-panel');
+  exp.innerHTML = '💡 ' + q.expl;
+  exp.classList.add('visible');
+}
+
+// ══════════════════════════════════════════════════════════
+// TIMER — circular SVG like DP100
+// ══════════════════════════════════════════════════════════
+function startTimer(seconds) {
+  state.timeLeft = seconds;
+  const circle = document.getElementById('timer-circle');
+  const text = document.getElementById('timer-text');
+  const circumference = 163;
+
+  function tick() {
+    text.textContent = state.timeLeft;
+    const offset = circumference - (state.timeLeft / state.maxTime) * circumference;
+    circle.style.strokeDashoffset = offset;
+
+    const pct = state.timeLeft / state.maxTime;
+    if (pct > 0.5) circle.style.stroke = '#F2C94C';
+    else if (pct > 0.25) circle.style.stroke = '#E67E22';
+    else circle.style.stroke = '#E74856';
+
+    text.style.color = pct > 0.25 ? 'var(--text)' : 'var(--red)';
+
+    if (state.timeLeft <= 0) {
+      clearInterval(state.timer);
+      if (!state.answered) timeOut();
+      return;
+    }
+    state.timeLeft--;
+  }
+
+  tick();
+  state.timer = setInterval(tick, 1000);
+}
+
+function timeOut() {
+  if (state.answered) return;
+  state.answered = true;
+  state.wrong++;
+  state.streak = 0;
+  state.combo = 1;
+  document.getElementById('combo-display').textContent = '×1';
+
+  const q = state.questions[state.current];
+  state.missed.push({ q: q.q.substring(0, 80) + '…', correct: q.opts[q.ans], category: q.domain });
+
+  document.querySelectorAll('.answer-btn').forEach(b => b.disabled = true);
+  const correctPos = state.displayMap.indexOf(q.ans);
+  document.querySelectorAll('.answer-btn')[correctPos].classList.add('reveal-correct');
+  updateFlames();
+
+  showToast('⏰ Time\'s up! +0 points');
+  showExplanation(q, MODE_CONFIG[state.mode].hints);
+  document.getElementById('next-btn').style.display = 'inline-flex';
+
+  if (MODE_CONFIG[state.mode].lightning) {
+    setTimeout(() => endGame(), 1200);
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════════════════
+function nextQuestion() {
+  state.current++;
+  if (state.current >= Math.min(MODE_CONFIG[state.mode].count, state.questions.length)) {
+    endGame();
+  } else {
+    loadQuestion();
+  }
+}
+
+function quitGame() {
+  clearInterval(state.timer);
+  endGame();
+}
+
+// ══════════════════════════════════════════════════════════
+// GAME END
+// ══════════════════════════════════════════════════════════
+function endGame() {
+  clearInterval(state.timer);
+  state.active = false;
+
+  const total = state.correct + state.wrong;
+  const pct = total > 0 ? Math.round((state.correct / total) * 100) : 0;
+
+  document.getElementById('final-score').textContent = state.score.toLocaleString();
+  document.getElementById('stat-correct').textContent = state.correct;
+  document.getElementById('stat-wrong').textContent = state.wrong;
+  document.getElementById('stat-streak').textContent = state.bestStreak;
+
+  let grade, gradeClass, emoji;
+  if (pct >= 90) { grade = '🏆 Outstanding! You\'re ready for the exam.'; gradeClass = 'grade-A'; emoji = '🏆'; }
+  else if (pct >= 75) { grade = '💪 Solid — review a few gaps and you\'re exam-ready.'; gradeClass = 'grade-B'; emoji = '🎯'; }
+  else if (pct >= 60) { grade = '📚 Good start — hit the study guide for the weak areas.'; gradeClass = 'grade-C'; emoji = '📚'; }
+  else { grade = '🔄 Keep going — practice makes perfect.'; gradeClass = 'grade-D'; emoji = '💻'; }
+
+  document.getElementById('results-emoji').textContent = emoji;
+  const banner = document.getElementById('grade-banner');
+  banner.textContent = `${pct}% correct — ${grade}`;
+  banner.className = 'grade-banner ' + gradeClass;
+
+  const missedSection = document.getElementById('missed-section');
+  const missedList = document.getElementById('missed-list');
+  missedList.innerHTML = '';
+
+  if (state.missed.length > 0) {
+    missedSection.style.display = 'block';
+    state.missed.slice(0, 4).forEach(m => {
+      const div = document.createElement('div');
+      div.className = 'missed-item';
+      div.innerHTML = `<strong>[${m.category}] ${m.q}</strong>Correct answer: ${m.correct}`;
+      missedList.appendChild(div);
+    });
+  } else {
+    missedSection.style.display = 'none';
+  }
+
+  saveScore(state.playerName, state.score, state.mode);
+  loadLeaderboard();
+  showScreen('results');
+}
+
+function playAgain() {
+  showScreen('name');
+}
+
+// ══════════════════════════════════════════════════════════
+// STREAK FLAMES
+// ══════════════════════════════════════════════════════════
+function updateFlames() {
+  for (let i = 1; i <= 5; i++) {
+    document.getElementById('flame-' + i).classList.toggle('lit', state.streak >= i);
+  }
+  const streakText = document.getElementById('streak-text');
+  if (state.streak >= 5) streakText.textContent = '🔥 ON FIRE!';
+  else if (state.streak >= 3) streakText.textContent = `${state.streak} in a row!`;
+  else streakText.textContent = state.streak > 0 ? `${state.streak} streak` : '';
+}
+
+// ══════════════════════════════════════════════════════════
+// FLOATING POINTS
+// ══════════════════════════════════════════════════════════
+function showFloatingPts(pts, correct, extra) {
+  const el = document.createElement('div');
+  el.className = 'floating-pts';
+  el.textContent = pts + extra;
+  el.style.color = correct ? 'var(--gold)' : 'var(--red)';
+  el.style.left = (Math.random() * 60 + 20) + '%';
+  el.style.top = '40%';
+  document.body.appendChild(el);
+  setTimeout(() => el.remove(), 1200);
+}
+
+// ══════════════════════════════════════════════════════════
+// TOAST
+// ══════════════════════════════════════════════════════════
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+// ══════════════════════════════════════════════════════════
+// PARTICLES (canvas burst on correct answer)
+// ══════════════════════════════════════════════════════════
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+
+function spawnParticles() {
+  const colors = ['#F2C94C', '#00B294', '#FFB900', '#FFD700', '#fff'];
+  for (let i = 0; i < 18; i++) {
+    particles.push({
+      x: canvas.width / 2,
+      y: canvas.height / 2,
+      vx: (Math.random() - 0.5) * 12,
+      vy: (Math.random() - 0.7) * 12,
+      r: Math.random() * 5 + 2,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      life: 1
+    });
+  }
+}
+
+function animParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles = particles.filter(p => p.life > 0);
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.vy += 0.3;
+    p.life -= 0.03;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = p.color + Math.floor(p.life * 255).toString(16).padStart(2, '0');
+    ctx.fill();
+  });
+  requestAnimationFrame(animParticles);
+}
+animParticles();
+
+// ══════════════════════════════════════════════════════════
+// LEADERBOARD (localStorage)
+// ══════════════════════════════════════════════════════════
+function saveScore(name, score, mode) {
+  const key = 'pl300_scores';
+  const scores = JSON.parse(localStorage.getItem(key) || '[]');
+  scores.push({ name, score, mode, date: new Date().toLocaleDateString() });
+  scores.sort((a, b) => b.score - a.score);
+  localStorage.setItem(key, JSON.stringify(scores.slice(0, 10)));
+}
+
+function loadLeaderboard() {
+  const scores = JSON.parse(localStorage.getItem('pl300_scores') || '[]');
+  for (let i = 0; i < 3; i++) {
+    const s = scores[i];
+    document.getElementById(`hs-${i+1}-name`).textContent = s ? `${s.name} (${s.mode})` : '---';
+    document.getElementById(`hs-${i+1}-score`).textContent = s ? s.score.toLocaleString() : '-';
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+// KEYBOARD SHORTCUTS
+// ══════════════════════════════════════════════════════════
+document.addEventListener('keydown', (e) => {
+  if (!state.active || state.answered) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      const nextBtn = document.getElementById('next-btn');
+      if (nextBtn.style.display !== 'none') nextQuestion();
+    }
+    return;
+  }
+  const map = { 'a': 0, 'b': 1, 'c': 2, 'd': 3, '1': 0, '2': 1, '3': 2, '4': 3 };
+  const k = e.key.toLowerCase();
+  if (map[k] !== undefined) {
+    // map[k] is the display position; convert to origIdx
+    const origIdx = state.displayMap[map[k]];
+    if (origIdx !== undefined) selectAnswer(origIdx);
+  }
+});
+
+// ══════════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════════
+buildTopicChips();
+loadLeaderboard();
+</script>
+</body>
+</html>
